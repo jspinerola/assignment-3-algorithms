@@ -1,3 +1,5 @@
+import java.util.Arrays;
+
 public class Algoritms {
     public static int recursiveCalls = 0;
 
@@ -12,6 +14,9 @@ public class Algoritms {
             result = rodCut(prices, n);
         } else if (algorithmPicker == 1) {
             result = rodCutMemorization(prices, n);
+        } else if (algorithmPicker == 2) {
+            int[] cuts = new int[100];
+            result = rodCuttingBottomUp(prices, n, cuts);
         }
         return result;
     }
@@ -22,7 +27,7 @@ public class Algoritms {
         long startTime = System.nanoTime();
         // Base case: no rod left means zero revenue
         if (n == 0) {
-            int duration = (int)(startTime - System.nanoTime());
+            int duration = (int)( System.nanoTime() - startTime);
             return new int[]{0, duration, recursiveCalls};
         }
         int maxRevenue = Integer.MIN_VALUE;
@@ -37,8 +42,94 @@ public class Algoritms {
         return new int[]{maxRevenue, duration, recursiveCalls};
     }
 
-    public static int[] rodCutMemorization(int[] prices, int n) {
+    // Method that initializes the memoization array and starts the recursion.
+    public static int[] rodCutMemorization(int[] price, int n) {
+        recursiveCalls++;
+        long startTime = System.nanoTime();
+        // Create a memo array to store solutions for subproblems.
+        // Initialize all entries to -1 indicating not computed.
+        int[] memo = new int[n + 1];
+        for (int i = 0; i <= n; i++) {
+            memo[i] = -1;
+        }
 
-        return new int[]{123871024, 421,2};
+        return new int[]{rodCutUtil(price, n, memo), (int)( System.nanoTime() - startTime), recursiveCalls};
+    }
+
+    // Recursive helper function that returns the maximum revenue for a rod of length n.
+    private static int rodCutUtil(int[] price, int n, int[] memo) {
+        recursiveCalls++;
+        // Base case: no length, no revenue.
+        if (n == 0) {
+            return 0;
+        }
+        // Return memoized result if available.
+        if (memo[n] != -1) {
+            return memo[n];
+        }
+
+        int maxRevenue = Integer.MIN_VALUE;
+
+        // Try every possible first cut and choose the one that gives maximum revenue.
+        for (int i = 1; i <= n; i++) {
+            // price[i-1] is the price for a rod of length i.
+            int revenue = price[i - 1] + rodCutUtil(price, n - i, memo);
+            maxRevenue = Math.max(maxRevenue, revenue);
+        }
+
+        // Store the result in memo array.
+        memo[n] = maxRevenue;
+        return maxRevenue;
+    }
+
+    /**
+     * Solves the rod cutting problem using bottom-up dynamic programming.
+     * It computes the maximum revenue for a rod of length n using the provided
+     * prices array (where prices[i] is the price of a rod of length i+1).
+     *
+     * @param prices The array of prices (index 0 represents length 1, index 1 represents length 2, etc.)
+     * @param n      The total length of the rod.
+     * @param cuts   An array to record the optimal first cut for each rod length.
+     * @return An array containing maximum revenue for each rod length from 0 to n.
+     */
+    public static int[] rodCuttingBottomUp(int[] prices, int n, int[] cuts) {
+        long startTime = System.nanoTime();
+
+        // revenue[j] will store the maximum revenue for a rod of length j.
+        int[] revenue = new int[n + 1];
+        revenue[0] = 0; // Base case: a rod of length 0 has revenue 0.
+
+        // Compute revenue[j] for j = 1 to n.
+        for (int j = 1; j <= n; j++) {
+            int maxRevenue = Integer.MIN_VALUE;
+            // Try every possible first cut.
+            for (int i = 1; i <= j; i++) {
+                recursiveCalls++;
+                // prices[i - 1] is the price for a piece of length i.
+                int currentRevenue = prices[i - 1] + revenue[j - i];
+                if (currentRevenue > maxRevenue) {
+                    maxRevenue = currentRevenue;
+                    // Record the best first cut for rod length j.
+                    cuts[j] = i;
+                }
+            }
+            revenue[j] = maxRevenue;
+        }
+        return new int[]{revenue[revenue.length - 1], (int)( System.nanoTime() - startTime), recursiveCalls};
+    }
+
+    /**
+     * Prints the optimal solution by displaying the cuts that lead to maximum revenue.
+     *
+     * @param n    The total length of the rod.
+     * @param cuts The array that stores the optimal first cut for each rod length.
+     */
+    public static void printSolution(int n, int[] cuts) {
+        System.out.print("The optimal cuts are: ");
+        while (n > 0) {
+            System.out.print(cuts[n] + " ");
+            n = n - cuts[n];
+        }
+        System.out.println();
     }
 }
