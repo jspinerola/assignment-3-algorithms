@@ -18,10 +18,20 @@ public class Algoritms {
             int[] cuts = new int[100];
             result = rodCuttingBottomUp(prices, n, cuts);
         }
+        else if (algorithmPicker == 3) {
+            result = cutRodClaude(prices, n);
+        }
+        else if (algorithmPicker == 4) {
+            result = cutRodTopDownClaude(prices, n);
+        }
+        else if (algorithmPicker == 5) {
+            int[] cuts = new int[100];
+            result = rodCuttingBottomUp(prices, n, cuts);
+        }
         return result;
     }
 
-    // Algorithm 1
+    /** ALGO 1 - ChatGPT **/
     public int[] rodCut(int[] prices, int n) {
         recursiveCalls++;
         long startTime = System.nanoTime();
@@ -42,6 +52,7 @@ public class Algoritms {
         return new int[]{maxRevenue, duration, recursiveCalls};
     }
 
+    /** ALGO 2 - ChatGPT **/
     // Method that initializes the memoization array and starts the recursion.
     public static int[] rodCutMemorization(int[] price, int n) {
         recursiveCalls++;
@@ -82,6 +93,7 @@ public class Algoritms {
         return maxRevenue;
     }
 
+    /** ALGO 3 - ChatGPT **/
     /**
      * Solves the rod cutting problem using bottom-up dynamic programming.
      * It computes the maximum revenue for a rod of length n using the provided
@@ -126,6 +138,151 @@ public class Algoritms {
      */
     public static void printSolution(int n, int[] cuts) {
         System.out.print("The optimal cuts are: ");
+        while (n > 0) {
+            System.out.print(cuts[n] + " ");
+            n = n - cuts[n];
+        }
+        System.out.println();
+    }
+
+    /** ALGO 1 - Claude **/
+    /**
+     * Solves the Rod Cutting Problem using a pure recursive approach without memoization.
+     * The Rod Cutting Problem: Given a rod of length n and an array of prices for rod pieces of length 1 to n,
+     * determine the maximum value obtainable by cutting up the rod and selling the pieces.
+     *
+     * @param prices Array where prices[i] is the price of a rod of length i+1
+     * @param n Length of the rod
+     * @return Maximum profit that can be obtained
+     */
+    public static int[] cutRodClaude(int[] prices, int n) {
+        recursiveCalls++;
+        long startTime = System.nanoTime();
+
+        // Base case: If rod length is 0, no profit can be made
+        if (n == 0) {
+            return new int[]{0, (int)( System.nanoTime() - startTime), recursiveCalls};
+        }
+
+        // Initialize maximum value as negative infinity
+        int maxValue = Integer.MIN_VALUE;
+
+        // Consider all possible cuts and find the one that gives maximum value
+        for (int i = 0; i < n; i++) {
+            // Cut the rod at position i, which gives a piece of length (i+1)
+            // and a remaining piece of length (n-(i+1))
+            // recursively find the best way to cut the remaining piece
+            maxValue = Math.max(maxValue, prices[i] + cutRodClaude(prices, n - (i + 1))[0]);
+        }
+
+        return new int[]{maxValue, (int)( System.nanoTime() - startTime), recursiveCalls};
+    }
+    /** ALGO 2 - Claude **/
+    /**
+     * Solves the Rod Cutting Problem using top-down dynamic programming with memoization.
+     *
+     * @param prices Array containing the price of each rod length
+     * @param n Length of the rod to be cut
+     * @return Maximum value obtainable by cutting the rod
+     */
+    public static int[] cutRodTopDownClaude(int[] prices, int n) {
+        recursiveCalls++;
+        long startTime = System.nanoTime();
+        // Create memoization array initialized to -1
+        int[] memo = new int[n + 1];
+        for (int i = 0; i <= n; i++) {
+            memo[i] = -1;
+        }
+        return new int[]{cutRodMemoizedClaude(prices, n, memo), (int)( System.nanoTime() - startTime), recursiveCalls};
+    }
+
+    /**
+     * Helper method that implements the memoized recursive solution
+     *
+     * @param prices Array containing the price of each rod length
+     * @param n Length of the rod to be cut
+     * @param memo Memoization array to store already computed results
+     * @return Maximum value obtainable by cutting the rod of length n
+     */
+    private static int cutRodMemoizedClaude(int[] prices, int n, int[] memo) {
+        recursiveCalls++;
+
+        // If the result is already calculated, return it
+        if (memo[n] >= 0) {
+            return memo[n];
+        }
+
+        int maxValue;
+
+        // Base case: if rod length is 0, no value can be obtained
+        if (n == 0) {
+            maxValue = 0;
+        } else {
+            // Initialize maximum value as negative infinity
+            maxValue = Integer.MIN_VALUE;
+
+            // Try all possible rod cuts and find the maximum value
+            for (int i = 1; i <= n; i++) {
+                // prices[i-1] represents the price of rod of length i
+                // We consider cutting a piece of length i and recursively solve for the remaining length n-i
+                maxValue = Math.max(maxValue, prices[i-1] + cutRodMemoizedClaude(prices, n - i, memo));
+            }
+        }
+
+        // Store the result in the memoization array
+        memo[n] = maxValue;
+        return maxValue;
+    }
+
+    /** ALGO 3 - Claude **/
+    /**
+     * Solves the rod cutting problem using bottom-up dynamic programming.
+     *
+     * @param prices Array of prices for each rod length, where prices[i] is the price for a rod of length i+1
+     * @param n Length of the rod to be cut
+     * @return An array containing the maximum revenue and the cuts to make
+     */
+    public static int[] solveRodCuttingClaude(int[] prices, int n) {
+        long startTime = System.nanoTime();
+
+        // dp[i] stores the maximum revenue for a rod of length i
+        int[] dp = new int[n + 1];
+
+        // cuts[i] stores the first cut to make for a rod of length i
+        int[] cuts = new int[n + 1];
+
+        // Base case: rod of length 0 has 0 value
+        dp[0] = 0;
+
+        // Fill the dp array bottom-up
+        for (int i = 1; i <= n; i++) {
+            int maxRevenue = Integer.MIN_VALUE;
+
+            // Try all possible cuts for current length
+            for (int j = 1; j <= i; j++) {
+                recursiveCalls++;
+                // If cutting at position j gives better revenue, update maxRevenue and cuts
+                if (prices[j - 1] + dp[i - j] > maxRevenue) {
+                    maxRevenue = prices[j - 1] + dp[i - j];
+                    cuts[i] = j; // Store the optimal cut length
+                }
+            }
+
+            dp[i] = maxRevenue;
+        }
+
+        return new int[] {dp[n], (int)( System.nanoTime() - startTime), recursiveCalls};
+    }
+
+    /**
+     * Prints the optimal solution including all cuts to make.
+     *
+     * @param cuts Array that stores the first cut to make for each rod length
+     * @param n Length of the rod
+     */
+    public static void printSolutionClaude(int[] cuts, int n) {
+        System.out.println("Optimal cuts for rod of length " + n + ":");
+
         while (n > 0) {
             System.out.print(cuts[n] + " ");
             n = n - cuts[n];
